@@ -1,0 +1,71 @@
+---
+title: "homework2"
+output: html_document
+date: '2023-03-12'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(shiny)
+library(usmap)
+library(lubridate)
+library(plotly)
+library(knitr)
+```
+
+```{r}
+songs <- read_csv("https://github.com/mwooding217/436hw2/raw/main/top10s.csv")
+head(songs)
+```
+
+```{r}
+ui <- fluidPage(
+  titlePanel("Top Spotify Music by Year"),
+  
+  #User selects year
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("year", label = "Select a year:", choices = sort(unique(songs$year)))
+    ),
+    
+  #Two plots that generate
+    mainPanel(
+      h3("Top 5 Songs and Artists"),
+      tableOutput("top5"),
+      br(),
+      h3("Genres and Frequencies"),
+      plotOutput("genrePlot")
+    )
+  )
+)
+
+
+server <- function(input, output) {
+  # Filter data based on year selected
+  filteredData <- reactive({
+    songs %>% filter(year == input$year) %>% select(title, artist, genre)
+  })
+  
+  # Output top 5 songs and artists
+  output$top5 <- renderTable({
+    filteredData() %>% head(5)
+  })
+  
+  # Output genre frequency plot
+  output$genrePlot <- renderPlot({
+    filteredData() %>% 
+      group_by(genre) %>% 
+      summarise(count = n()) %>% 
+      ggplot(aes(x = genre, y = count, fill = genre)) + 
+      geom_col() +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  })
+}
+
+# Run the app
+shinyApp(ui, server)
+
+```
+
